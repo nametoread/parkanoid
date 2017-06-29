@@ -1,14 +1,16 @@
 #include <windows.h>
 #include <gdiplus.h>
 
+#define dbg MessageBox(NULL, L"test", L"here", MB_OK)
+
 #define WINDOW_WIDTH 500
 #define WINDOW_HEIGHT 700
 
-#define BRICK_COLUMS 6
+#define BRICK_COLUMNS 6
 #define BRICK_ROWS 6
 #define BRICK_WIDTH 60
 #define BRICK_HEIGHT 20
-#define BRICK_GAP 20
+#define BRICK_GAP 18
 
 #define BALL_SIZE 20
 
@@ -17,17 +19,21 @@
 #define PADDLE_SPEED 10
 
 void playGame(void);
+void drawBrick(void);
 void drawPaddle(void);
 void drawBall(void);
+bool collisionPaddle();
+void collisionBrick();
 // void exitGame(void);
 
-const TCHAR ver[] = L"0.1-beta";
+const TCHAR ver[] = L"0.3-beta";
 HWND hWnd;
-RECT rBall;
+RECT rBall, scrn;
+TCHAR bricks[BRICK_ROWS][BRICK_COLUMNS];
 int paddleX = 200, paddleY = WINDOW_HEIGHT - PADDLE_HEIGHT * 8;
 int ballX = paddleX + 40, ballY = paddleY - BALL_SIZE;
 int ballDx = 4, ballDy = 6;
-int lLife = 3;
+int lLife = 3, lHit = 0, lScore = 0;
 
 LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam);
 
@@ -65,8 +71,17 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 		return NULL;
 	}
 
+	scrn.left = 1;
+	scrn.top = 1;
+	scrn.right = 499;
+	scrn.bottom = 699;
+
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
+
+	for (int row = 0; row < BRICK_ROWS; row++)
+		for (int col = 0; col < BRICK_COLUMNS; col++)
+			bricks[row][col] = row * 6 + col * 6 + 20;
 
 	while(1) {
 		if (PeekMessage(&mMssg, NULL, NULL, NULL, PM_REMOVE)) {
@@ -91,7 +106,6 @@ LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam)
 */
 			break;
 		case WM_PAINT:
-			drawPaddle();
 			break;
 		case WM_KEYDOWN:		// key press
 			switch (wParam) {
@@ -133,9 +147,8 @@ LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam)
 } // process - end
 
 void playGame(void) {
-//	drawBricks();
-	drawPaddle();
-
+	//drawPaddle();
+	drawBall();
 	ballX += ballDx;
 	ballY += ballDy;
 
@@ -147,29 +160,56 @@ void playGame(void) {
 		ballDy = -ballDy;
 		ballY += ballDy;
 	}
-	else if (ballY > (600))	{
+	else if ((ballY > 600) && !collisionPaddle()) {
 		ballDy = -ballDy;
 		ballY += ballDy;
 		lLife--;
 	}
+	else if ((ballY > 600) && collisionPaddle()) {
+		ballDy = -ballDy;
+		ballY += ballDy;
+	}
 	
 	InvalidateRect(hWnd, &rBall, TRUE);
-	drawBall();
+	collisionBrick();
+	
+	drawBrick();
+}
+
+void drawBrick(void) {
+	int x1, y1 = BRICK_GAP;
+	PAINTSTRUCT psBrick;
+	HDC hdc = BeginPaint(hWnd, &psBrick);
+
+	for (int row = 0; row < BRICK_ROWS; row++) {
+		x1 = BRICK_GAP;
+		for (int col = 0; col < BRICK_COLUMNS; col++) {
+			if (bricks[row][col] != 0) {
+				SelectObject(hdc, GetStockObject(WHITE_PEN));
+				bricks[row][col] = Rectangle(hdc, x1, y1, x1 + BRICK_WIDTH, y1 + BRICK_HEIGHT);
+			}
+			x1 += BRICK_WIDTH + BRICK_GAP;
+		}
+		y1 += BRICK_HEIGHT + BRICK_GAP;
+	}
+
+	EndPaint(hWnd, &psBrick);
+	DeleteDC(hdc);
 }
 
 void drawBall(void) {
 	PAINTSTRUCT psBall;
-	HDC hdc = BeginPaint(hWnd, &psBall);
+	HDC hdcBall = BeginPaint(hWnd, &psBall);
 
 	rBall.left = ballX;
 	rBall.top = ballY;
 	rBall.right = ballX + BALL_SIZE;
 	rBall.bottom = ballY + BALL_SIZE;
 
-	SelectObject(hdc, GetStockObject(WHITE_PEN));
-	Rectangle(hdc, rBall.left, rBall.top, rBall.right, rBall.bottom);
+	SelectObject(hdcBall, GetStockObject(WHITE_PEN));
+	Rectangle(hdcBall, rBall.left, rBall.top, rBall.right, rBall.bottom);
 	EndPaint(hWnd, &psBall);
-	DeleteDC(hdc);
+	DeleteDC(hdcBall);
 	Sleep(66);
 }
 
@@ -186,6 +226,38 @@ void drawPaddle(void) {
 	Rectangle(hdc, x1, y1, x2, y2);
 	EndPaint(hWnd, &ps);
 	DeleteDC(hdc);
+}
+
+bool collisionPaddle() {
+	return ((rBall.left > paddleX - 5) && (rBall.left < paddleX + PADDLE_WIDTH + 5));
+}
+
+void collisionBrick(void) {
+	int ballCx = ballX + (BALL_SIZE / 2),
+		ballCy = ballY + (BALL_SIZE / 2),
+		x1 = BRICK_GAP,
+		y1 = BRICK_GAP;
+
+	if (lHit >= (BRICK_ROWS * BRICK_COLUMNS)) {
+		// win
+	}
+
+	for (int row = 0; row < BRICK_ROWS; row++) {
+		x1 = BRICK_GAP;
+		for (int col = 0; col < BRICK_COLUMNS; col++) {
+			if (bricks[row][col] != 0) {
+				if ((ballCx > x1) && (ballCx < x1 + BRICK_WIDTH) &&
+					(ballCy > y1) && (ballCy < y1 + BRICK_HEIGHT)) {
+					bricks[row][col] = 0;
+					lHit++;
+					ballDy = -ballDy;
+					ballDx += 2;
+					lScore += 10;
+					return;
+				}
+			} x1 += BRICK_GAP;
+		} y1 += BRICK_GAP;
+	};
 }
 
 /*void exitGame(void) {
