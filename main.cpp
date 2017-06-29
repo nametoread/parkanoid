@@ -10,21 +10,24 @@
 #define BRICK_HEIGHT 20
 #define BRICK_GAP 20
 
-#define BALL_SIZE 10
+#define BALL_SIZE 20
 
 #define PADDLE_WIDTH 100
 #define PADDLE_HEIGHT 10
 #define PADDLE_SPEED 10
 
-void drawPaddle();
-void drawBall();
+void playGame(void);
+void drawPaddle(void);
+void drawBall(void);
 // void exitGame(void);
 
-const TCHAR ver[] = L"0.4-alfa";
+const TCHAR ver[] = L"0.1-beta";
 HWND hWnd;
-int paddleX;
-int ballX = 0, ballY = 0;
-int ballDx = 0, ballDy = 0;
+RECT rBall;
+int paddleX = 200, paddleY = WINDOW_HEIGHT - PADDLE_HEIGHT * 8;
+int ballX = paddleX + 40, ballY = paddleY - BALL_SIZE;
+int ballDx = 4, ballDy = 6;
+int lLife = 3;
 
 LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam);
 
@@ -32,8 +35,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	const TCHAR ctrlClass[] = L"Control Class";
 	WNDCLASSEX wndClass;
 	MSG mMssg;
-	
-	paddleX = 200;
 
 	ZeroMemory(&wndClass, sizeof(wndClass));
 // class description - begin
@@ -70,10 +71,11 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	while(1) {
 		if (PeekMessage(&mMssg, NULL, NULL, NULL, PM_REMOVE)) {
 			if (mMssg.message == WM_QUIT) break;
+			
 			TranslateMessage(&mMssg);
 			DispatchMessage(&mMssg);
 		}
-//		playGame();
+		playGame();
 	}
 
 //	exitGame();
@@ -130,15 +132,57 @@ LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam)
 	return NULL;
 } // process - end
 
+void playGame(void) {
+//	drawBricks();
+	drawPaddle();
+
+	ballX += ballDx;
+	ballY += ballDy;
+
+	if (ballX > (WINDOW_WIDTH - BALL_SIZE*2) || ballX < 0) {
+		ballDx = -ballDx;
+		ballX += ballDx;
+	}
+	if (ballY < 0) {
+		ballDy = -ballDy;
+		ballY += ballDy;
+	}
+	else if (ballY > (600))	{
+		ballDy = -ballDy;
+		ballY += ballDy;
+		lLife--;
+	}
+	
+	InvalidateRect(hWnd, &rBall, TRUE);
+	drawBall();
+}
+
+void drawBall(void) {
+	PAINTSTRUCT psBall;
+	HDC hdc = BeginPaint(hWnd, &psBall);
+
+	rBall.left = ballX;
+	rBall.top = ballY;
+	rBall.right = ballX + BALL_SIZE;
+	rBall.bottom = ballY + BALL_SIZE;
+
+	SelectObject(hdc, GetStockObject(WHITE_PEN));
+	Rectangle(hdc, rBall.left, rBall.top, rBall.right, rBall.bottom);
+	EndPaint(hWnd, &psBall);
+	DeleteDC(hdc);
+	Sleep(66);
+}
+
 void drawPaddle(void) {
 	PAINTSTRUCT ps;
+	HGDIOBJ objPaddle = NULL;
 	HDC hdc = BeginPaint(hWnd, &ps);
 	int x1 = paddleX,
 		y1 = WINDOW_HEIGHT - PADDLE_HEIGHT * 8,
 		x2 = x1 + PADDLE_WIDTH,
 		y2 = y1 + PADDLE_HEIGHT;
 
-	SelectObject(hdc, GetStockObject(WHITE_PEN));
+	objPaddle = SelectObject(hdc, GetStockObject(WHITE_PEN));
 	Rectangle(hdc, x1, y1, x2, y2);
 	EndPaint(hWnd, &ps);
 	DeleteDC(hdc);
