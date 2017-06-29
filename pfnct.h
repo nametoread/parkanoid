@@ -9,7 +9,7 @@ void drawPaddle(void);
 void drawBall(void);
 bool collisionPaddle();
 void collisionBrick();
-// void exitGame(void);
+void exitGame(void);
 ///						proto - end
 
 
@@ -66,11 +66,9 @@ void drawBrick(void) {
 		y1 += BRICK_HEIGHT + BRICK_GAP;
 	}
 	EndPaint(hWnd, &psBrick);
-	//DeleteDC(hdc);
 }
 
 void drawBall(void) {
-	collisionBrick();
 	InvalidateRect(hWnd, &rBall, TRUE);
 	PAINTSTRUCT psBall;
 	HGDIOBJ objBall = NULL;
@@ -79,7 +77,7 @@ void drawBall(void) {
 	objBall = SelectObject(hdcBall, GetStockObject(WHITE_PEN));
 	Rectangle(hdcBall, rBall.left, rBall.top, rBall.right, rBall.bottom);
 	EndPaint(hWnd, &psBall);
-	//DeleteDC(hdcBall);
+	collisionBrick();
 }
 
 void drawPaddle(void) {
@@ -92,7 +90,6 @@ void drawPaddle(void) {
 	objPaddle = SelectObject(hdc, GetStockObject(WHITE_PEN));
 	Rectangle(hdc, rPaddle.left, rPaddle.top, rPaddle.right, rPaddle.bottom);
 	EndPaint(hWnd, &ps);
-	//DeleteDC(hdc);
 }
 
 bool collisionPaddle() {
@@ -115,19 +112,25 @@ void collisionBrick(void) {
 		for (int col = 0; col < BRICK_COLUMNS; col++) {
 			if (bricks[row][col] != 0) {
 				if ((ballCx > x1) && (ballCx < x1 + BRICK_WIDTH) &&
-					(ballCy > y1) && (ballCy < y1 + BRICK_HEIGHT)) {
+					(ballCx > y1) && (ballCy < y1 + BRICK_HEIGHT)) {
 					bricks[row][col] = 0;
 					lHit++;
 					ballDy = -ballDy;
-					ballDx = ((ballDx + 2) % 6) + 3;
+					ballDx = -ballDx;
 					lScore += 10;
 					return;
 				}
-			} x1 += BRICK_GAP;
-		} y1 += BRICK_GAP;
-	};
+			}
+			x1 += BRICK_WIDTH + BRICK_GAP;
+		}
+		y1 += BRICK_HEIGHT + BRICK_GAP;
+	}
 }
 
-/*void exitGame(void) {
-MessageBox(NULL, L"exit msg", L"works", MB_OK);
-}*/
+void exitGame(void) {
+	if (lLife == 0) MessageBox(hWnd, L"loser", L"end", MB_OK);
+	else MessageBox(hWnd, L"well played", L"end", MB_OK);
+	PostQuitMessage(NULL);
+	DestroyWindow(hWnd);
+	return;
+}

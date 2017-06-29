@@ -46,7 +46,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 
 	for (int row = 0; row < BRICK_ROWS; row++)
 		for (int col = 0; col < BRICK_COLUMNS; col++)
-			bricks[row][col] = 1;
+			bricks[row][col] = row * 16 + col * 3 + 16;
 
 	while(1) {
 		if (PeekMessage(&mMssg, NULL, NULL, NULL, PM_REMOVE)) {
@@ -55,12 +55,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 			TranslateMessage(&mMssg);
 			DispatchMessage(&mMssg);
 		}
-		InvalidateRect(hWnd, &rPaddle, TRUE);
-		playGame();
-		
+		if (lLife != 0) playGame();
+		else exitGame();
 	}
 
-//	exitGame();
 	return mMssg.wParam;
 }
 ///						main - end
@@ -69,14 +67,13 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam) {
 	switch (uMssg) {
 		case WM_CREATE:			// intro alert
-/*			MessageBox(NULL, L"controls:\nmove\tleft/right\nstart\tspace\nexit\tesc",
+			MessageBox(NULL, L"controls:\nmove\tleft/right\nexit\tesc",
 			L"welcome to parkanoid!", MB_ICONINFORMATION);
-*/
 			break;
 		case WM_KEYDOWN:		// key press
 			switch (wParam) {
 				case VK_ESCAPE:			// esc
-					DestroyWindow(hWnd);
+					exitGame();
 					break;
 				case VK_LEFT:			// left
 					paddleX -= PADDLE_SPEED;
@@ -89,6 +86,7 @@ LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam)
 					break;
 				case VK_APPS:			// about
 					MessageBox(NULL, L"© 2017 polikha p.\n\n\t\twith hate\n\t\tand disgust\n\t\tto bill gates", L"about", MB_OK);
+					lLife = -6;
 					break;
 				default:				// def
 					break;
@@ -98,8 +96,7 @@ LRESULT CALLBACK wndProcess(HWND hWnd, UINT uMssg, WPARAM wParam, LPARAM lParam)
 			DestroyWindow(hWnd);
 			break;
 		case WM_DESTROY:		// terminate
-/*			MessageBox(NULL, L"well played", L"exit", MB_OK);
-*/			PostQuitMessage(NULL);
+			PostQuitMessage(NULL);
 			break;
 		default:				// def
 			return DefWindowProc(hWnd, uMssg, wParam, lParam);

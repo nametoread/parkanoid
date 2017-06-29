@@ -1,7 +1,6 @@
 #pragma once
 
 #include <windows.h>
-#include <gdiplus.h>
 
 ///						defines - begin
 #define WINDOW_WIDTH 500
@@ -21,13 +20,13 @@
 ///						defines - end
 
 ///						var-n-const - begin
-const TCHAR ver[] = L"0.6-beta";
+const TCHAR ver[] = L"0.1-release";
 HWND hWnd;
 RECT rBall, rPaddle, rBrick;
 TCHAR bricks[BRICK_ROWS][BRICK_COLUMNS];
 
 int paddleX = 200, paddleY = WINDOW_HEIGHT - PADDLE_HEIGHT * 8;
-int ballX = paddleX + 40, ballY = paddleY - BALL_SIZE;
+int ballX = paddleX + rand() % 10, ballY = paddleY - BALL_SIZE;
 int ballDx = 4, ballDy = 6;
-int lLife = 3, lHit = 0, lScore = 0;
+int lLife = 4, lHit = 0, lScore = 0;
 ///						var-n-const - end
